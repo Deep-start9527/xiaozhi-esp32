@@ -109,9 +109,10 @@ SscmaCamera::SscmaCamera(esp_io_expander_handle_t io_exp_handle) {
     }
 
     //初始化JPEG解码
-    jpeg_dec_config_t config = { .output_type = JPEG_RAW_TYPE_RGB565_LE, .rotate = JPEG_ROTATE_0D };
-    jpeg_dec_ = jpeg_dec_open(&config);
-    if (!jpeg_dec_) {
+    jpeg_error_t err;
+    jpeg_dec_config_t config = { .output_type = JPEG_PIXEL_FORMAT_RGB565_LE, .rotate = JPEG_ROTATE_0D };
+    err = jpeg_dec_open(&config, &jpeg_dec_);
+    if ( err != JPEG_ERR_OK ) {
         ESP_LOGE(TAG, "Failed to open JPEG decoder");
         return;
     }
@@ -278,7 +279,8 @@ std::string SscmaCamera::Explain(const std::string& question) {
         return "{\"success\": false, \"message\": \"Image explain URL or token is not set\"}";
     }
 
-    auto http = Board::GetInstance().CreateHttp();
+    auto network = Board::GetInstance().GetNetwork();
+    auto http = network->CreateHttp(3);
     // 构造multipart/form-data请求体
     std::string boundary = "----ESP32_CAMERA_BOUNDARY";
     
