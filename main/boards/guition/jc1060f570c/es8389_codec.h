@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <array>
 #include <cassert>
+#include <cmath>
 #include <mutex>
 
 // JC1060F570C: TD0/TD2 are microphone data and TD1/TD3 are
@@ -21,8 +22,8 @@
 class GuitionEs8389Codec : public AudioCodec {
 public:
     GuitionEs8389Codec(i2c_master_bus_handle_t bus, gpio_num_t bclk, gpio_num_t ws, gpio_num_t dout,
-                       gpio_num_t din, gpio_num_t pa_pin)
-        : pa_pin_(pa_pin) {
+                       gpio_num_t din, gpio_num_t pa_pin, float output_gain_db)
+        : pa_pin_(pa_pin), output_gain_(std::pow(10.0f, output_gain_db / 20.0f)) {
         duplex_ = true;
         input_sample_rate_ = output_sample_rate_ = 16000;
         input_channels_ = guition_es8389::kAecChannels;
@@ -156,6 +157,7 @@ private:
     esp_codec_dev_handle_t output_dev_ = nullptr;
     esp_codec_dev_handle_t input_dev_ = nullptr;
     gpio_num_t pa_pin_;
+    const float output_gain_;
     bool devices_open_ = false;
     std::mutex control_mutex_;
     std::array<int16_t, AUDIO_CODEC_DMA_FRAME_NUM * guition_es8389::kTdmSlots> input_buffer_{};
@@ -215,7 +217,7 @@ private:
         int done = 0;
         while (done < samples) {
             int frames = std::min(samples - done, AUDIO_CODEC_DMA_FRAME_NUM);
-            guition_es8389::PackPlayback(data + done, output_buffer_.data(), frames);
+            guition_es8389::PackPlayback(data + done, output_buffer_.data(), frames, output_gain_);
             if (esp_codec_dev_write(output_dev_, output_buffer_.data(),
                                     frames * guition_es8389::kTdmSlots * sizeof(int16_t)) !=
                 ESP_CODEC_DEV_OK) {

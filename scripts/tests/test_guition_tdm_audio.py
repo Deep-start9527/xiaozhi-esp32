@@ -20,6 +20,7 @@ class GuitionTdmAudioTests(unittest.TestCase):
 #include "es8389_tdm.h"
 #include <algorithm>
 #include <cstdlib>
+#include <cmath>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -27,6 +28,7 @@ class GuitionTdmAudioTests(unittest.TestCase):
 int main(int argc, char** argv) {
     if (argc < 4) return 1;
     const bool capture = std::string(argv[1]) == "capture";
+    const float gain = std::string(argv[1]) == "boost" ? std::pow(10.0f, 6.0f / 20.0f) : 1.0f;
     const size_t frames = std::stoul(argv[2]);
     const size_t chunk = std::stoul(argv[3]);
     const size_t in_stride = capture ? 4 : 1;
@@ -42,7 +44,7 @@ int main(int argc, char** argv) {
                                                output.data() + 1 + done * out_stride, count);
         } else {
             guition_es8389::PackPlayback(input.data() + done * in_stride,
-                                         output.data() + 1 + done * out_stride, count);
+                                         output.data() + 1 + done * out_stride, count, gain);
         }
     }
     // Also exercise zero-frame calls against the last-frame boundary.
@@ -98,11 +100,26 @@ int main(int argc, char** argv) {
         self.assertEqual(played, [value for sample in mono for value in (sample, 0, sample, 0)])
         self.assertEqual(played[-4:], [121, 0, 121, 0])
 
+    def test_playback_boosts_six_db_and_saturates_both_polarities(self):
+        mono = [-32768, -20000, -1000, -1, 0, 1, 1000, 20000, 32767]
+        boosted = [-32768, -32768, -1995, -1, 0, 1, 1995, 32767, 32767]
+        self.assertEqual(
+            self.run_mapping("boost", len(mono), mono),
+            [value for sample in boosted for value in (sample, 0, sample, 0)])
+
+    def test_playback_boost_handles_partial_last_chunk(self):
+        mono = [-20000, -1000, 0, 1000, 20000] * 49
+        boosted = [-32768, -1995, 0, 1995, 32767] * 49
+        self.assertEqual(
+            self.run_mapping("boost", len(mono), mono),
+            [value for sample in boosted for value in (sample, 0, sample, 0)])
+
     def test_single_and_empty_frames_preserve_boundaries(self):
         self.assertEqual(self.run_mapping("capture", 1, [3, -4, 5, -6]), [3, -4])
         self.assertEqual(self.run_mapping("playback", 1, [-7]), [-7, 0, -7, 0])
         self.assertEqual(self.run_mapping("capture", 0, []), [])
         self.assertEqual(self.run_mapping("playback", 0, []), [])
+        self.assertEqual(self.run_mapping("boost", 0, []), [])
 
 
 if __name__ == "__main__":

@@ -39,7 +39,11 @@ python3 scripts/build.py guition/jc8048f543 --name guition-jc8048f543
 TX 将小智单声道 PCM 放入 TD0/TD2，TD1/TD3 填零，分别对应 DAC 左右半帧的有效 16 bit。
 两端始终采用相同四时隙格式；暂停播放仅关闭外部功放，不停止采集所用的共享时钟。
 esp_codec_dev 1.6.2 的 ES8389 输出 mute 实际操作 ADC 寄存器，因此此配置不调用该接口，以免关闭麦克风。
-增益仅作用于 MIC1 的模拟 PGA，不对播放参考样本施加麦克风增益。
+麦克风增益仅作用于 MIC1 的模拟 PGA，不对播放参考样本施加麦克风增益。
+播放 PCM 默认增加 **+6 dB**（约 1.995 倍振幅），由本目录 `config.h` 的
+`AUDIO_OUTPUT_SOFTWARE_GAIN_DB` 配置；设为 `0.0f` 可恢复单位增益。
+放大后进行 16 位饱和限幅，再送入 TD0/TD2；音量档位和 NVS 音量记忆照常生效。
+AEC 使用 ES8389 返回的实际播放参考，采集端不额外放大麦克风或回采样本。
 LCD 使用两个 PSRAM 帧缓冲和 8 行 bounce buffer，匹配现有 `RgbLcdDisplay`。
 
 不初始化触摸、摄像头、SD 卡或按键。GPIO42 仅用于功放，GPIO0/1 用于 RGB 数据，不能作为启动按键。

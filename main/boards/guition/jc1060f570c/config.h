@@ -12,6 +12,8 @@
 #define AUDIO_I2S_GPIO_DIN GPIO_NUM_16
 // GPIO42 is exclusively the speaker amplifier enable, never an ADC button.
 #define AUDIO_CODEC_PA_PIN GPIO_NUM_42
+// Boost playback PCM before the DAC; user volume remains independently adjustable.
+#define AUDIO_OUTPUT_SOFTWARE_GAIN_DB 6.0f
 
 #define DISPLAY_WIDTH 1024
 #define DISPLAY_HEIGHT 600

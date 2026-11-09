@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 
@@ -17,11 +18,14 @@ inline void ExtractMicReference(const int16_t* tdm, int16_t* mr, size_t frames) 
 
 // ES8389's normal I2S DAC consumes the first 16 bits of each 32-bit half:
 // slots 0 and 2 carry L/R audio; slots 1 and 3 are padding, not RX references.
-inline void PackPlayback(const int16_t* mono, int16_t* tdm, size_t frames) {
+inline void PackPlayback(const int16_t* mono, int16_t* tdm, size_t frames, float gain = 1.0f) {
     for (size_t i = 0; i < frames; ++i) {
-        tdm[i * kTdmSlots] = mono[i];
+        // Saturate before narrowing so boosted peaks never wrap around.
+        const auto sample = static_cast<int16_t>(
+            std::clamp(static_cast<float>(mono[i]) * gain, -32768.0f, 32767.0f));
+        tdm[i * kTdmSlots] = sample;
         tdm[i * kTdmSlots + 1] = 0;
-        tdm[i * kTdmSlots + 2] = mono[i];
+        tdm[i * kTdmSlots + 2] = sample;
         tdm[i * kTdmSlots + 3] = 0;
     }
 }

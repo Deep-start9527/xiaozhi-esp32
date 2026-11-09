@@ -63,8 +63,8 @@ public:
 
     AudioCodec* GetAudioCodec() override {
         static GuitionEs8389Codec codec(i2c_bus_, AUDIO_I2S_GPIO_BCLK, AUDIO_I2S_GPIO_WS,
-                                        AUDIO_I2S_GPIO_DOUT, AUDIO_I2S_GPIO_DIN,
-                                        AUDIO_CODEC_PA_PIN);
+                                        AUDIO_I2S_GPIO_DOUT, AUDIO_I2S_GPIO_DIN, AUDIO_CODEC_PA_PIN,
+                                        AUDIO_OUTPUT_SOFTWARE_GAIN_DB);
         return &codec;
     }
 
