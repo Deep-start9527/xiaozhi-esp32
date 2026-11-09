@@ -1,23 +1,33 @@
 #pragma once
 
-#include "../guition_p4_board.h"
+#include <driver/gpio.h>
+#include <driver/i2c_types.h>
 
-// Hardware routing and display timings from Guition's jc4880p443 board definition.
-inline constexpr GuitionP4Config kBoardConfig = {
-    .audio_din = GPIO_NUM_48,
-    .audio_pa = GPIO_NUM_11,
-    .lcd_reset = GPIO_NUM_5,
-    .lane_bit_rate_mbps = 550,
-    .dpi_clock_freq_mhz = 34,
-    .video_timing =
-        {
-            .h_size = 480,
-            .v_size = 800,
-            .hsync_pulse_width = 12,
-            .hsync_back_porch = 42,
-            .hsync_front_porch = 42,
-            .vsync_pulse_width = 2,
-            .vsync_back_porch = 8,
-            .vsync_front_porch = 166,
-        },
-};
+// Hardware routing and timings from this model's Guition reference definition.
+#define AUDIO_INPUT_SAMPLE_RATE 24000
+#define AUDIO_OUTPUT_SAMPLE_RATE 24000
+#define AUDIO_CODEC_I2C_PORT I2C_NUM_0
+#define AUDIO_CODEC_I2C_SDA_PIN GPIO_NUM_7
+#define AUDIO_CODEC_I2C_SCL_PIN GPIO_NUM_8
+#define AUDIO_I2S_GPIO_MCLK GPIO_NUM_13
+#define AUDIO_I2S_GPIO_BCLK GPIO_NUM_12
+#define AUDIO_I2S_GPIO_WS GPIO_NUM_10
+#define AUDIO_I2S_GPIO_DOUT GPIO_NUM_9
+#define AUDIO_I2S_GPIO_DIN GPIO_NUM_48
+#define AUDIO_CODEC_PA_PIN GPIO_NUM_11
+#define DISPLAY_RESET_PIN GPIO_NUM_5
+#define DISPLAY_WIDTH 480
+#define DISPLAY_HEIGHT 800
+#define LCD_MIPI_DSI_LANE_BITRATE_MBPS 550
+#define LCD_DPI_CLOCK_FREQ_MHZ 34
+#define LCD_HSYNC_PULSE_WIDTH 12
+#define LCD_HSYNC_BACK_PORCH 42
+#define LCD_HSYNC_FRONT_PORCH 42
+#define LCD_VSYNC_PULSE_WIDTH 2
+#define LCD_VSYNC_BACK_PORCH 8
+#define LCD_VSYNC_FRONT_PORCH 166
+#define DISPLAY_BACKLIGHT_PIN GPIO_NUM_23
+#define DISPLAY_BACKLIGHT_OUTPUT_INVERT false
+#define LCD_MIPI_DSI_LANE_NUM 2
+#define MIPI_DSI_PHY_PWR_LDO_CHAN 3
+#define MIPI_DSI_PHY_PWR_LDO_VOLTAGE_MV 2500

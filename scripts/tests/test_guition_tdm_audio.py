@@ -14,10 +14,10 @@ class GuitionTdmAudioTests(unittest.TestCase):
     def setUpClass(cls):
         cls.tmp = tempfile.TemporaryDirectory()
         cls.addClassCleanup(cls.tmp.cleanup)
-        cls.binary = str(pathlib.Path(cls.tmp.name) / "guition-tdm-test")
+        cls.binaries = {}
         source = pathlib.Path(cls.tmp.name) / "guition_tdm_test.cc"
         source.write_text(r'''
-#include "main/boards/guition/common/es8389_tdm.h"
+#include "es8389_tdm.h"
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
@@ -52,17 +52,26 @@ int main(int argc, char** argv) {
     return 0;
 }
 ''')
-        subprocess.run(
-            ["c++", "-std=c++17", "-Wall", "-Wextra", "-Werror", "-I", str(ROOT),
-             str(source), "-o", cls.binary], check=True)
+        for board in ("jc1060f570c", "jc8048f543", "jc8048f550"):
+            binary = str(pathlib.Path(cls.tmp.name) / f"{board}-tdm-test")
+            subprocess.run(
+                ["c++", "-std=c++17", "-Wall", "-Wextra", "-Werror", "-I",
+                 str(ROOT / "main/boards/guition" / board), str(source), "-o", binary],
+                check=True)
+            cls.binaries[board] = binary
 
     def run_mapping(self, mode, frames, values, chunk=240):
-        result = subprocess.run(
-            [self.binary, mode, str(frames), str(chunk), *map(str, values)],
-            check=True, capture_output=True, text=True)
-        output = list(map(int, result.stdout.split()))
-        self.assertEqual((output[0], output[-1]), (12345, 12345))
-        return output[1:-1]
+        outputs = []
+        for board, binary in self.binaries.items():
+            with self.subTest(board=board):
+                result = subprocess.run(
+                    [binary, mode, str(frames), str(chunk), *map(str, values)],
+                    check=True, capture_output=True, text=True)
+                output = list(map(int, result.stdout.split()))
+                self.assertEqual((output[0], output[-1]), (12345, 12345))
+                outputs.append(output[1:-1])
+                self.assertEqual(outputs[-1], outputs[0])
+        return outputs[0]
 
     def test_capture_selects_td0_td1_without_swapping_or_using_other_pair(self):
         self.assertEqual(

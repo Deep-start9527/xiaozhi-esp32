@@ -3,6 +3,8 @@
 ESP32-S31，16 MB Flash、Octal PSRAM，800 × 480 RGB565 屏幕，原生 Wi-Fi。
 配置依据 Guition-fork 的 `components/board/guition_boards/jc8048f550/` 中有效的 YAML 配置值；部分原始注释与接线值不一致，因此未采用旧注释中的 GPIO。
 
+板级实现、引脚配置和 ES8389/AEC 适配均保存在本型号目录中，可独立修改，不依赖其他 Guition 板型的配置或辅助文件。
+
 ## 构建
 
 要求 ESP-IDF release/v6.1。在交互式 fish 中执行：

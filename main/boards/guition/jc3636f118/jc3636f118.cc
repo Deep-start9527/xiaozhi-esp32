@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-#include "../guition_simplex_audio.h"
 #include "config.h"
 #include "display/lcd_display.h"
+#include "simplex_audio_codec.h"
 #include "wifi_board.h"
 
 #include <driver/spi_common.h>

@@ -924,7 +924,7 @@ class TargetConfigurationTests(unittest.TestCase):
 
 
 class BuildOptionTests(unittest.TestCase):
-    def test_guition_shared_board_helpers_expose_build_options(self):
+    def test_guition_independent_boards_expose_build_options(self):
         aec_boards = {"jc1060f570c", "jc8048f543", "jc8048f550"}
         names = (
             "jc1060p470", "jc1060p470-i-w-y", "jc4880p443", "jc8012p4a1",
@@ -1819,48 +1819,22 @@ class CliTests(unittest.TestCase):
 
 
 class BoardSourceTests(unittest.TestCase):
-    def test_board_source_follows_local_includes_once_and_handles_cycles(self):
-        with tempfile.TemporaryDirectory() as temp_dir:
-            boards = Path(temp_dir) / "boards"
-            board = boards / "selected"
-            helper = boards / "shared"
-            board.mkdir(parents=True)
-            helper.mkdir()
-            (board / "board.cc").write_text('#include "config.h"\nboard_marker\n', encoding="utf-8")
-            (board / "config.h").write_text(
-                '#include "../shared/base.h"\n#include "missing.h"\nconfig_marker\n',
-                encoding="utf-8",
-            )
-            (helper / "base.h").write_text(
-                '# include "nested.inc"\n#include "../selected/config.h"\nhelper_marker\n',
-                encoding="utf-8",
-            )
-            (helper / "nested.inc").write_text('nested_marker\n', encoding="utf-8")
-            (helper / "unrelated.h").write_text('unrelated_marker\n', encoding="utf-8")
-            with mock.patch.object(build, "_BOARDS_DIR", boards):
-                source = build._board_source_text("selected")
-            for marker in ("board_marker", "config_marker", "helper_marker", "nested_marker"):
-                self.assertEqual(source.count(marker), 1, marker)
-            self.assertNotIn("unrelated_marker", source)
-
-    def test_board_source_does_not_follow_includes_outside_boards_or_system_headers(self):
-        with tempfile.TemporaryDirectory() as temp_dir:
-            root = Path(temp_dir)
-            boards = root / "boards"
-            board = boards / "selected"
-            board.mkdir(parents=True)
-            (root / "outside.h").write_text('outside_marker\n', encoding="utf-8")
-            (board / "escape.h").symlink_to(root / "outside.h")
-            (boards / "system.h").write_text('system_marker\n', encoding="utf-8")
-            (board / "board.cc").write_text(
-                '#include "../../outside.h"\n#include "escape.h"\n#include <../system.h>\n',
-                encoding="utf-8",
-            )
-            with mock.patch.object(build, "_BOARDS_DIR", boards):
-                source = build._board_source_text("selected")
-                self.assertEqual(build._board_source_text(".."), "")
-            self.assertNotIn("outside_marker", source)
-            self.assertNotIn("system_marker", source)
+    def test_guition_boards_do_not_depend_on_vendor_shared_sources(self):
+        vendor = (ROOT / "main/boards/guition").resolve()
+        source_suffixes = {".c", ".cc", ".cpp", ".h", ".hpp"}
+        self.assertFalse(any(p.suffix in source_suffixes for p in vendor.iterdir()))
+        self.assertFalse((vendor / "common").exists())
+        for config in sorted(vendor.glob("*/config.json")):
+            board_dir = config.parent
+            for path in board_dir.rglob("*"):
+                if path.suffix not in source_suffixes:
+                    continue
+                source = path.read_text(encoding="utf-8")
+                for include in re.findall(r'^\s*#\s*include\s+"([^"\n]+)"', source, re.MULTILINE):
+                    dependency = (path.parent / include).resolve()
+                    if dependency.is_relative_to(vendor):
+                        self.assertTrue(dependency.is_relative_to(board_dir),
+                                        f"{path}: non-local Guition include {include}")
 
     def test_relative_board_includes_exist(self):
         missing = []

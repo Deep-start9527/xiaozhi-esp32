@@ -15,7 +15,7 @@
 #include <cassert>
 #include <mutex>
 
-// Guition S31 RGB boards: TD0/TD2 are microphone data and TD1/TD3 are
+// JC1060F570C: TD0/TD2 are microphone data and TD1/TD3 are
 // playback reference. The application receives TD0/TD1 as interleaved MR.
 // No MCLK is wired: four 16-bit slots supply the codec's required 64fs BCLK.
 class GuitionEs8389Codec : public AudioCodec {
