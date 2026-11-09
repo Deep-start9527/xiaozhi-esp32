@@ -9,6 +9,14 @@ dependencies:
   espressif/esp_lcd_ili9341: ^2.1.0
   espressif/esp_lcd_gc9a01: ~2.0.4
   espressif/esp_lcd_st77916: ^2.0.2
+  guition/esp_lcd_axs15260:
+    version: ^1.0.0
+    rules:
+    - if: target == esp32s31
+  espressif/esp_lcd_jd9165:
+    version: ^2.0.2
+    rules:
+    - if: target == esp32p4
   espressif/esp_lcd_axs15231b: ^2.1.0
 
   espressif/esp_lcd_st7701:

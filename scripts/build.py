@@ -472,11 +472,31 @@ def _kconfig_config_board_dependencies(
 
 
 def _board_source_text(board: str) -> str:
-    board_dir = _BOARDS_DIR / board
+    """Read board sources and their local includes within the boards tree."""
+    boards_dir = _BOARDS_DIR.resolve()
+    board_dir = (boards_dir / board).resolve()
+    if not board_dir.is_relative_to(boards_dir):
+        return ""
+    pending = sorted(
+        (path for path in board_dir.rglob("*")
+         if path.suffix in {".c", ".cc", ".cpp", ".h", ".hpp"}),
+        reverse=True,
+    )
+    visited: set[Path] = set()
     parts: list[str] = []
-    for path in sorted(board_dir.rglob("*")):
-        if path.suffix in {".c", ".cc", ".cpp", ".h", ".hpp"}:
-            parts.append(path.read_text(encoding="utf-8", errors="replace"))
+    while pending:
+        path = pending.pop().resolve()
+        if path in visited or not path.is_relative_to(boards_dir) or not path.is_file():
+            continue
+        visited.add(path)
+        source = path.read_text(encoding="utf-8", errors="replace")
+        parts.append(source)
+        includes = re.findall(r'^[ \t]*#[ \t]*include[ \t]+"([^"\r\n]+)"', source, re.MULTILINE)
+        pending.extend(
+            path.parent / include
+            for include in reversed(includes)
+            if not Path(include).is_absolute()
+        )
     return "\n".join(parts)
 
 

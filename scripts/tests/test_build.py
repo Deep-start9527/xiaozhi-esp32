@@ -924,6 +924,34 @@ class TargetConfigurationTests(unittest.TestCase):
 
 
 class BuildOptionTests(unittest.TestCase):
+    def test_guition_shared_board_helpers_expose_build_options(self):
+        aec_boards = {"jc1060f570c", "jc8048f543", "jc8048f550"}
+        names = (
+            "jc1060p470", "jc1060p470-i-w-y", "jc4880p443", "jc8012p4a1",
+            "jc1060f570c", "jc3636f118", "jc5454f328", "jc8048f543", "jc8048f550",
+        )
+        for name in names:
+            with self.subTest(board=name):
+                board = f"guition/{name}"
+                config = json.loads(
+                    (ROOT / "main/boards" / board / "config.json").read_text(encoding="utf-8")
+                )
+                build_config = config["builds"][0]
+                board_config = build._resolve_board_config(
+                    board, config["target"], build_config["sdkconfig_append"],
+                    variant_name=build_config["name"],
+                )
+                definitions = build._build_option_definitions(
+                    board, config["target"], board_config, build_config,
+                )
+                options = {item["key"]: item for item in definitions}
+                self.assertIn("display_style", options)
+                self.assertIn("multiline_chat", options)
+                self.assertEqual("wifi_provisioning" in options, config["target"] == "esp32s31")
+                self.assertEqual("aec_mode" in options, name in aec_boards)
+                if name in aec_boards:
+                    self.assertEqual(options["aec_mode"]["default"], "device")
+
     def test_supported_languages_match_kconfig_and_cmake(self):
         kconfig = (ROOT / "main/Kconfig.projbuild").read_text(
             encoding="utf-8"
@@ -1791,6 +1819,49 @@ class CliTests(unittest.TestCase):
 
 
 class BoardSourceTests(unittest.TestCase):
+    def test_board_source_follows_local_includes_once_and_handles_cycles(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            boards = Path(temp_dir) / "boards"
+            board = boards / "selected"
+            helper = boards / "shared"
+            board.mkdir(parents=True)
+            helper.mkdir()
+            (board / "board.cc").write_text('#include "config.h"\nboard_marker\n', encoding="utf-8")
+            (board / "config.h").write_text(
+                '#include "../shared/base.h"\n#include "missing.h"\nconfig_marker\n',
+                encoding="utf-8",
+            )
+            (helper / "base.h").write_text(
+                '# include "nested.inc"\n#include "../selected/config.h"\nhelper_marker\n',
+                encoding="utf-8",
+            )
+            (helper / "nested.inc").write_text('nested_marker\n', encoding="utf-8")
+            (helper / "unrelated.h").write_text('unrelated_marker\n', encoding="utf-8")
+            with mock.patch.object(build, "_BOARDS_DIR", boards):
+                source = build._board_source_text("selected")
+            for marker in ("board_marker", "config_marker", "helper_marker", "nested_marker"):
+                self.assertEqual(source.count(marker), 1, marker)
+            self.assertNotIn("unrelated_marker", source)
+
+    def test_board_source_does_not_follow_includes_outside_boards_or_system_headers(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            boards = root / "boards"
+            board = boards / "selected"
+            board.mkdir(parents=True)
+            (root / "outside.h").write_text('outside_marker\n', encoding="utf-8")
+            (board / "escape.h").symlink_to(root / "outside.h")
+            (boards / "system.h").write_text('system_marker\n', encoding="utf-8")
+            (board / "board.cc").write_text(
+                '#include "../../outside.h"\n#include "escape.h"\n#include <../system.h>\n',
+                encoding="utf-8",
+            )
+            with mock.patch.object(build, "_BOARDS_DIR", boards):
+                source = build._board_source_text("selected")
+                self.assertEqual(build._board_source_text(".."), "")
+            self.assertNotIn("outside_marker", source)
+            self.assertNotIn("system_marker", source)
+
     def test_relative_board_includes_exist(self):
         missing = []
         boards_dir = ROOT / "main/boards"

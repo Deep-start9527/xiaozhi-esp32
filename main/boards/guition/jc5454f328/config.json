@@ -1,0 +1,16 @@
+{
+    "manufacturer": "guition",
+    "type": "guition-jc5454f328",
+    "target": "esp32s31",
+    "preview": true,
+    "builds": [
+        {
+            "name": "guition-jc5454f328",
+            "idf_version": ">=6.1",
+            "sdkconfig_append": [
+                "CONFIG_SPIRAM_XIP_FROM_PSRAM=y",
+                "CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y"
+            ]
+        }
+    ]
+}

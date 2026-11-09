@@ -1,0 +1,16 @@
+{
+    "manufacturer": "guition",
+    "type": "guition-jc1060f570c",
+    "target": "esp32s31",
+    "preview": true,
+    "builds": [
+        {
+            "name": "guition-jc1060f570c",
+            "idf_version": ">=6.1",
+            "sdkconfig_append": [
+                "CONFIG_SPIRAM_XIP_FROM_PSRAM=y",
+                "CONFIG_USE_DEVICE_AEC=y"
+            ]
+        }
+    ]
+}

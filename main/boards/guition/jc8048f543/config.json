@@ -1,0 +1,16 @@
+{
+    "manufacturer": "guition",
+    "type": "guition-jc8048f543",
+    "target": "esp32s31",
+    "preview": true,
+    "builds": [
+        {
+            "name": "guition-jc8048f543",
+            "idf_version": ">=6.1",
+            "sdkconfig_append": [
+                "CONFIG_SPIRAM_XIP_FROM_PSRAM=y",
+                "CONFIG_USE_DEVICE_AEC=y"
+            ]
+        }
+    ]
+}
